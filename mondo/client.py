@@ -29,9 +29,9 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Account(**account)
+                Account(**account, client=self)
                 for account in response.json()['accounts']
-                ]
+            ]
         else:
             raise MongoAuthException(response.json()['message'])
 
@@ -78,7 +78,7 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Transaction(**transaction)
+                Transaction(**transaction, client=self)
                 for transaction in response.json()['transactions']
             ]
         else:
@@ -97,7 +97,9 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Transaction(**response.json()['transaction'])
+            return Transaction(
+                **response.json()['transaction'], client=self
+            )
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -120,7 +122,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Transaction(**response.json())
+            return Transaction(**response.json()['transaction'], client=self)
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -150,7 +152,7 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Webhook(**webhook)
+                Webhook(**webhook, client=self)
                 for webhook in response.json()['webhooks']
             ]
         else:
@@ -175,7 +177,9 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Webhook(**response.json()['webook'])
+            return Webhook(
+                **response.json()['webook'], client=self
+            )
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -216,7 +220,10 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Attachment(**response.json()['attachment'])
+            return Attachment(
+                **response.json()['attachment'],
+                client=self
+            )
         else:
             raise MondoApiException(response.json()['message'])
 

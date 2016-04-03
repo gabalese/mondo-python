@@ -77,14 +77,14 @@ class Account(object):
 
 
 class Balance(object):
-    def __init__(self, balance, spend_today, currency, generated_at):
-        self.balance = Amount(balance, currency)  # it's in pence
+    def __init__(self, amount, spend_today, currency, generated_at):
+        self.amount = Amount(amount, currency)  # it's in pence
         self.spent_today = Amount(spend_today, currency)
         self.generated_at = generated_at
 
     def __repr__(self):
         return "{} (at {})".format(
-            self.balance, self.generated_at)
+            self.amount, self.generated_at)
 
 
 class Amount(object):

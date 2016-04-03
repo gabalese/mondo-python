@@ -8,7 +8,7 @@ import requests
 BASE_API_URL = 'https://auth.getmondo.co.uk/?'
 
 
-class MongoAuthException(Exception):
+class MondoAuthException(Exception):
     pass
 
 
@@ -67,7 +67,7 @@ def exchange_authorization_code_for_access_token(client_id: str,
     ).json()
 
     if 'error' in response:
-        raise MongoAuthException(response['error_description'])
+        raise MondoAuthException(response['error_description'])
 
     return response['access_token'], response.get('refresh_token')
 
@@ -93,6 +93,6 @@ def refresh_access_token(client_id: str, client_secret: str, refresh_token: str)
     ).json()
 
     if 'error' in response:
-        raise MongoAuthException(response['error_description'])
+        raise MondoAuthException(response['error_description'])
     
     return response['access_token'], response['refresh_token']

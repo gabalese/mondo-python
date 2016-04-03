@@ -10,6 +10,23 @@ class MondoApiException(Exception):
     pass
 
 
+class MondoEntity(object):
+    @classmethod
+    def from_response(cls, class_name: str, json: dict, *args, **kwargs):
+        """
+        Build the appropriate object from a response
+        :param response:
+        :param class_name:
+        :return:
+        """
+        cls._response = json
+        subclasses = {klass.__name__: klass for klass in MondoEntity.__subclasses__()}
+        return subclasses[class_name](*args, **cls._response, **kwargs)
+
+    def json(self):
+        return self._response
+
+
 class MondoApi(object):
     BASE_API_URL = 'https://api.getmondo.co.uk'
 
@@ -40,8 +57,56 @@ class MondoApi(object):
         )
         return response
 
+    ENTITIES_TO_ENTITY = {
+        'accounts': 'Account',
+        'transactions': 'Transaction',
+        'attachments': 'Attachment',
+        'webhooks': 'Webhook',
+    }  # TODO: Refactor
 
-class Transaction(object):
+    ENTITY_TO_ENTITIES = {
+        'Account': 'accounts',
+        'Transaction': 'transactions',
+        'Attachment': 'attachments',
+        'Webhook': 'webhooks'
+    }  # TODO: Refactor
+
+    def _list_of(self, entities_name: str, **kwargs):
+        response = self._make_request(
+            '/{}'.format(entities_name.lower()), kwargs
+        )
+        if response.ok:
+            entity_name = self.ENTITIES_TO_ENTITY[entities_name]
+            return [
+                MondoEntity.from_response(entity_name, entity)
+                for entity in response.json()[entities_name]
+            ]
+        else:
+            raise MondoApiException(response.json()['message'])
+
+    def _get(self, entity_name: str, entity_id: str, **kwargs):
+        entities_name = self.ENTITY_TO_ENTITIES[entity_name.capitalize()]
+        response = self._make_request(
+            '/{}/{}'.format(
+                entities_name, entity_id
+            ), kwargs
+        )
+
+        if response.ok:
+            return MondoEntity.from_response(
+                entity_name.capitalize(), response.json()[entity_name.lower()]
+            )
+        else:
+            raise MondoApiException(response.json()['message'])
+
+    def _create(self):
+        pass
+
+    def _delete(self):
+        pass
+
+
+class Transaction(MondoEntity):
     def __init__(self, id, description, amount, currency, created, merchant,
                  account_balance, metadata, notes, is_load, settled, category,
                  decline_reason=None, *args, **kwargs):
@@ -71,7 +136,7 @@ class Transaction(object):
         )
 
 
-class Merchant(object):
+class Merchant(MondoEntity):
     def __init__(self, id, group_id, name, address, category, logo, emoji, created,
                  metadata, *args, **kwargs):
         self.id = id
@@ -90,7 +155,7 @@ class Merchant(object):
         )
 
 
-class Account(object):
+class Account(MondoEntity):
     def __init__(self, id, description, created):
         self.id = id
         self.description = description
@@ -102,7 +167,7 @@ class Account(object):
         )
 
 
-class Balance(object):
+class Balance(MondoEntity):
     def __init__(self, balance, spend_today, currency, generated_at):
         self.balance = Amount(balance, currency)  # it's in pence
         self.spent_today = Amount(spend_today, currency)
@@ -111,6 +176,33 @@ class Balance(object):
     def __repr__(self):
         return "{} (at {})".format(
             self.balance, self.generated_at)
+
+
+class Attachment(MondoEntity):
+    def __init__(self, id, user_id, external_id, file_url, file_type, created, *args, **kwargs):
+        self.id = id
+        self.user_id = user_id
+        self.external_id = external_id
+        self.file_url = file_url
+        self.file_type = file_type
+        self.created = dateutil.parser.parse(created)
+
+    def __repr__(self):
+        return "<Attachment: {} {} ({}) / {}>".format(
+            self.id, self.file_url, self.file_type, self.created
+        )
+
+
+class Webhook(MondoEntity):
+    def __init__(self, id: str, account_id: str, url: str, *args, **kwargs):
+        self.id = id
+        self.account_id = account_id
+        self.url = url
+
+    def __repr__(self):
+        return "<Webhook {} {}>".format(
+            self.id, self.url
+        )
 
 
 class Amount(object):
@@ -132,31 +224,4 @@ class Amount(object):
     def __repr__(self):
         return "{:.2f} {}".format(
             self.value / 100, self.currency
-        )
-
-
-class Attachment(object):
-    def __init__(self, id, user_id, external_id, file_url, file_type, created, *args, **kwargs):
-        self.id = id
-        self.user_id = user_id
-        self.external_id = external_id
-        self.file_url = file_url
-        self.file_type = file_type
-        self.created = dateutil.parser.parse(created)
-
-    def __repr__(self):
-        return "<Attachment: {} {} ({}) / {}>".format(
-            self.id, self.file_url, self.file_type, self.created
-        )
-
-
-class Webhook(object):
-    def __init__(self, id: str, account_id: str, url: str, *args, **kwargs):
-        self.id = id
-        self.account_id = account_id
-        self.url = url
-
-    def __repr__(self):
-        return "<Webhook {} {}>".format(
-            self.id, self.url
         )

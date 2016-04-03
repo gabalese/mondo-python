@@ -1,8 +1,8 @@
 import datetime
 
-from mondo.authorization import MongoAuthException
+from mondo.authorization import MondoAuthException
 from mondo.mondo import (Account, Balance, MondoApiException, Transaction,
-                         Attachment, Webhook, MondoApi)
+                         Attachment, Webhook, MondoApi, MondoEntity)
 
 
 class MondoClient(MondoApi):
@@ -25,15 +25,7 @@ class MondoClient(MondoApi):
 
         :return: an Account object
         """
-        response = self._make_request('/accounts')
-
-        if response.ok:
-            return [
-                Account(**account)
-                for account in response.json()['accounts']
-                ]
-        else:
-            raise MongoAuthException(response.json()['message'])
+        return self._list_of('accounts')
 
     def get_balance(self, account_id: str):
         """
@@ -45,9 +37,11 @@ class MondoClient(MondoApi):
         response = self._make_request('/balance', {'account_id': account_id})
 
         if response.ok:
-            return Balance(
-                **response.json(),
-                generated_at=datetime.datetime.now())
+            return MondoEntity.from_response(
+                'Balance', response.json(),
+                generated_at=datetime.datetime.now()
+            )
+
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -74,15 +68,7 @@ class MondoClient(MondoApi):
         if limit:
             params.update({'limit': limit})
 
-        response = self._make_request('/transactions', params)
-
-        if response.ok:
-            return [
-                Transaction(**transaction)
-                for transaction in response.json()['transactions']
-            ]
-        else:
-            raise MondoApiException(response.json()['message'])
+        return self._list_of('transactions', **params)
 
     def get_transaction(self, transaction_id: str):
         """
@@ -91,15 +77,8 @@ class MondoClient(MondoApi):
         :param transaction_id: Transaction.id as returned by a list
         :return: a Transaction
         """
-        response = self._make_request(
-            '/transactions/{}'.format(transaction_id),
-            {'expand[]': 'merchant'}
-        )
 
-        if response.ok:
-            return Transaction(**response.json()['transaction'])
-        else:
-            raise MondoApiException(response.json()['message'])
+        return self._get('transaction', transaction_id, **{'expand[]': 'merchant'})
 
     def annotate_transaction(self, transaction_id: str, metadata: dict):
         """
@@ -120,7 +99,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Transaction(**response.json())
+            return MondoEntity.from_response('Transaction', response.json()['transaction'])
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -141,20 +120,8 @@ class MondoClient(MondoApi):
         :param account_id: account id
         :return: a json list of webhooks (might be objects? TODO)
         """
-        response = self._make_request(
-            url='/webhooks',
-            parameters={
-                'account_id': account_id
-            }
-        )
 
-        if response.ok:
-            return [
-                Webhook(**webhook)
-                for webhook in response.json()['webhooks']
-            ]
-        else:
-            raise MondoApiException(response.json()['message'])
+        return self._list_of('webhooks', account_id=account_id)
 
     def register_webhook(self, account_id: str, url: str):
         """
@@ -175,7 +142,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Webhook(**response.json()['webook'])
+            return MondoEntity.from_response('Webhook', response.json()['webhook'])
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -216,7 +183,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Attachment(**response.json()['attachment'])
+            return MondoEntity.from_response('Attachment', response.json()['attachment'])
         else:
             raise MondoApiException(response.json()['message'])
 

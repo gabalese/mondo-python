@@ -1,4 +1,5 @@
-from distutils.core import setup
+import os
+from setuptools import setup
 
 setup(
     name='mondo-python',
@@ -9,7 +10,7 @@ setup(
     install_requires=[
         'appnope==0.1.0',
         'cookies==2.2.1',
-        'decorator==4.0.9'
+        'decorator==4.0.9',
         'gnureadline==6.3.3',
         'nose==1.3.7',
         'path.py==8.1.2',

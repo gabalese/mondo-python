@@ -29,7 +29,7 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Account(**account, client=self)
+                Account(client=self, **account)
                 for account in response.json()['accounts']
             ]
         else:
@@ -45,9 +45,8 @@ class MondoClient(MondoApi):
         response = self._make_request('/balance', {'account_id': account_id})
 
         if response.ok:
-            return Balance(
-                **response.json(),
-                generated_at=datetime.datetime.now())
+            return Balance(generated_at=datetime.datetime.now(),
+                           **response.json())
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -78,7 +77,7 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Transaction(**transaction, client=self)
+                Transaction(client=self, **transaction)
                 for transaction in response.json()['transactions']
             ]
         else:
@@ -98,7 +97,8 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return Transaction(
-                **response.json()['transaction'], client=self
+                client=self,
+                **response.json()['transaction']
             )
         else:
             raise MondoApiException(response.json()['message'])
@@ -122,7 +122,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Transaction(**response.json()['transaction'], client=self)
+            return Transaction(client=self, **response.json()['transaction'])
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -152,7 +152,7 @@ class MondoClient(MondoApi):
 
         if response.ok:
             return [
-                Webhook(**webhook, client=self)
+                Webhook(client=self, **webhook)
                 for webhook in response.json()['webhooks']
             ]
         else:
@@ -177,9 +177,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Webhook(
-                **response.json()['webook'], client=self
-            )
+            return Webhook(client=self, **response.json()['webook'])
         else:
             raise MondoApiException(response.json()['message'])
 
@@ -220,10 +218,7 @@ class MondoClient(MondoApi):
         )
 
         if response.ok:
-            return Attachment(
-                **response.json()['attachment'],
-                client=self
-            )
+            return Attachment(client=self, **response.json()['attachment'])
         else:
             raise MondoApiException(response.json()['message'])
 

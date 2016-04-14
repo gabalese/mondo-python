@@ -48,11 +48,11 @@ class MondoApi(object):
 
 
 class Account(object):
-    def __init__(self, id, description, created, client=None):
+    def __init__(self, id, description, created, client=None, *args, **kwargs):
         self.id = id
         self.description = description
         self.created = dateutil.parser.parse(created)
-        self.client = client
+        self.__client = client
 
     def __repr__(self):
         return "<Account {} {} ({})>".format(
@@ -60,25 +60,26 @@ class Account(object):
         )
 
     def get_balance(self):
-        if self.client:
-            return self.client.get_balance(account_id=self.id)
+        if self.__client:
+            return self.__client.get_balance(account_id=self.id)
 
     def list_transactions(self):
-        if self.client:
-            return self.client.list_transactions(account_id=self.id)
+        if self.__client:
+            return self.__client.list_transactions(account_id=self.id)
 
     def list_webhooks(self):
-        if self.client:
-            return self.client.list_webhooks(account_id=self)
+        if self.__client:
+            return self.__client.list_webhooks(account_id=self)
 
     def register_webhook(self, url: str):
-        if self.client:
-            return self.client.register_webhook(url)
+        if self.__client:
+            return self.__client.register_webhook(url)
 
 
 class Balance(object):
-    def __init__(self, amount, spend_today, currency, generated_at):
-        self.amount = Amount(amount, currency)  # it's in pence
+    def __init__(self, balance, spend_today, currency, generated_at,
+                 *args, **kwargs):
+        self.amount = Amount(balance, currency)  # it's in pence
         self.spent_today = Amount(spend_today, currency)
         self.generated_at = generated_at
 
@@ -88,7 +89,7 @@ class Balance(object):
 
 
 class Amount(object):
-    def __init__(self, value, currency):
+    def __init__(self, value, currency, *args, **kwargs):
         self._value = D(value)
         self._currency = currency
 
@@ -130,19 +131,19 @@ class Transaction(object):
         self.settled = settled
         self.category = category
         self.decline_reason = decline_reason
-        self.client = client
+        self.__client = client
 
     @property
     def amount(self):
         return Amount(self._amount, self.currency)
 
     def annotate(self, metadata: dict):
-        if self.client:
-            return self.client.annotate_transaction(self.id, metadata)
+        if self.__client:
+            return self.__client.annotate_transaction(self.id, metadata)
 
     def register_attachment(self, file_url: str, file_type: str):
-        if self.client:
-            return self.client.register_attachment(
+        if self.__client:
+            return self.__client.register_attachment(
                 self.id, file_url, file_type
             )
 
@@ -180,7 +181,7 @@ class Attachment(object):
         self.file_url = file_url
         self.file_type = file_type
         self.created = dateutil.parser.parse(created)
-        self.client = client
+        self.__client = client
 
     def __repr__(self):
         return "<Attachment: {} {} ({}) / {}>".format(
@@ -188,8 +189,8 @@ class Attachment(object):
         )
 
     def deregister(self):
-        if self.client:
-            self.client.deregister_attachment(self.id)
+        if self.__client:
+            self.__client.deregister_attachment(self.id)
 
 
 class Webhook(object):

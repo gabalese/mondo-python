@@ -1,15 +1,11 @@
-import pprint
 from random import choice
 from string import ascii_uppercase
 from urllib import parse
 
 import requests
+from mondo.exceptions import MondoApiException
 
 BASE_API_URL = 'https://auth.getmondo.co.uk/?'
-
-
-class MongoAuthException(Exception):
-    pass
 
 
 def generate_state_token(length=10):
@@ -23,6 +19,8 @@ def generate_mondo_auth_url(client_id: str, redirect_uri: str,
     for the first step of the authorization flow
 
     :param client_id: the oauth_client
+    :param redirect_uri: URL to which the user will be redirected
+    :param state_token: random token to check the authenticity of the request
     :return: authorization url
     """
     params = {
@@ -67,7 +65,7 @@ def exchange_authorization_code_for_access_token(client_id: str,
     ).json()
 
     if 'error' in response:
-        raise MongoAuthException(response['error_description'])
+        raise MondoApiException(response['error_description'])
 
     return response['access_token'], response.get('refresh_token')
 
@@ -93,6 +91,6 @@ def refresh_access_token(client_id: str, client_secret: str, refresh_token: str)
     ).json()
 
     if 'error' in response:
-        raise MongoAuthException(response['error_description'])
+        raise MondoApiException(response['error_description'])
     
     return response['access_token'], response['refresh_token']

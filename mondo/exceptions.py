@@ -1,0 +1,2 @@
+class MondoApiException(Exception):
+    pass

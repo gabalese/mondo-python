@@ -7,10 +7,6 @@ from mondo import authorization
 from mondo.utils import build_url
 
 
-class MondoApiException(Exception):
-    pass
-
-
 class MondoApi(object):
     BASE_API_URL = 'https://api.getmondo.co.uk'
 
@@ -39,7 +35,9 @@ class MondoApi(object):
                 'Authorization': 'Bearer {}'.format(self.__access_token)
             }, **kwargs
         )
-        return response
+        if response.ok:
+            return response.json()
+        raise MondoApiException(response.json()['message'])
 
     def refresh_token(self, client_id, client_secret, refresh_token):
         self.__access_token, _ = authorization.refresh_access_token(

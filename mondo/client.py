@@ -1,8 +1,6 @@
 import datetime
 
-from mondo.authorization import MongoAuthException
-from mondo.mondo import (Account, Balance, MondoApiException, Transaction,
-                         Attachment, Webhook, MondoApi)
+from mondo.mondo import MondoApi, Account, Balance, Transaction, Attachment, Webhook
 
 
 class MondoClient(MondoApi):
@@ -12,11 +10,7 @@ class MondoClient(MondoApi):
 
         :return: response as json
         """
-        response = self._make_request('/ping/whoami')
-        if response.ok:
-            return response.json()
-        else:
-            raise MondoApiException(response.json()['message'])
+        return self._make_request('/ping/whoami')
 
     def list_accounts(self):
         """
@@ -27,13 +21,9 @@ class MondoClient(MondoApi):
         """
         response = self._make_request('/accounts')
 
-        if response.ok:
-            return [
-                Account(client=self, **account)
-                for account in response.json()['accounts']
-            ]
-        else:
-            raise MongoAuthException(response.json()['message'])
+        return [
+            Account(client=self, **account) for account in response['accounts']
+        ]
 
     def get_balance(self, account_id: str):
         """
@@ -44,11 +34,7 @@ class MondoClient(MondoApi):
         """
         response = self._make_request('/balance', {'account_id': account_id})
 
-        if response.ok:
-            return Balance(generated_at=datetime.datetime.now(),
-                           **response.json())
-        else:
-            raise MondoApiException(response.json()['message'])
+        return Balance(generated_at=datetime.datetime.now(), **response)
 
     def list_transactions(self, account_id: str, since: str = None,
                           before=None, limit=None):
@@ -66,6 +52,7 @@ class MondoClient(MondoApi):
             'account_id': account_id,
             'expand[]': 'merchant'
         }
+
         if since:
             params.update({'since': since})
         if before:
@@ -75,13 +62,10 @@ class MondoClient(MondoApi):
 
         response = self._make_request('/transactions', params)
 
-        if response.ok:
-            return [
-                Transaction(client=self, **transaction)
-                for transaction in response.json()['transactions']
-            ]
-        else:
-            raise MondoApiException(response.json()['message'])
+        return [
+            Transaction(client=self, **transaction)
+            for transaction in response['transactions']
+        ]
 
     def get_transaction(self, transaction_id: str):
         """
@@ -95,13 +79,7 @@ class MondoClient(MondoApi):
             {'expand[]': 'merchant'}
         )
 
-        if response.ok:
-            return Transaction(
-                client=self,
-                **response.json()['transaction']
-            )
-        else:
-            raise MondoApiException(response.json()['message'])
+        return Transaction(client=self, **response['transaction'])
 
     def annotate_transaction(self, transaction_id: str, metadata: dict):
         """
@@ -121,10 +99,7 @@ class MondoClient(MondoApi):
             data=metadata
         )
 
-        if response.ok:
-            return Transaction(client=self, **response.json()['transaction'])
-        else:
-            raise MondoApiException(response.json()['message'])
+        return Transaction(client=self, **response['transaction'])
 
     def create_feed_item(self, account_id, feed_item):
         """
@@ -150,13 +125,9 @@ class MondoClient(MondoApi):
             }
         )
 
-        if response.ok:
-            return [
-                Webhook(client=self, **webhook)
-                for webhook in response.json()['webhooks']
-            ]
-        else:
-            raise MondoApiException(response.json()['message'])
+        return [
+            Webhook(client=self, **webhook) for webhook in response['webhooks']
+        ]
 
     def register_webhook(self, account_id: str, url: str):
         """
@@ -176,10 +147,7 @@ class MondoClient(MondoApi):
             }
         )
 
-        if response.ok:
-            return Webhook(client=self, **response.json()['webook'])
-        else:
-            raise MondoApiException(response.json()['message'])
+        return Webhook(client=self, **response['webook'])
 
     def delete_webook(self, webhook_id: str):
         """
@@ -188,14 +156,11 @@ class MondoClient(MondoApi):
         :param webhook_id: the id of a webhook to delete
         :return: An empty dict
         """
-        response = self._make_request(
+        self._make_request(
             method='DELETE',
             url='/webhooks/{}'.format(webhook_id)
         )
-        if response.ok:
-            return {}
-        else:
-            raise MondoApiException(response.json()['message'])
+        return {}
 
     def register_attachment(self, transaction_id: str, file_url: str,
                             file_type: str):
@@ -217,10 +182,7 @@ class MondoClient(MondoApi):
             }
         )
 
-        if response.ok:
-            return Attachment(client=self, **response.json()['attachment'])
-        else:
-            raise MondoApiException(response.json()['message'])
+        return Attachment(client=self, **response['attachment'])
 
     def deregister_attachment(self, attachment_id):
         """
@@ -229,7 +191,7 @@ class MondoClient(MondoApi):
         :param attachment_id: the Attachment id
         :return: an empty dict
         """
-        response = self._make_request(
+        self._make_request(
             method='POST',
             url='/attachment/deregister',
             data={
@@ -237,7 +199,4 @@ class MondoClient(MondoApi):
             }
         )
 
-        if response.ok:
-            return {}
-        else:
-            raise MondoApiException(response.json()['message'])
+        return {}

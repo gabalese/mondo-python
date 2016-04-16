@@ -1,3 +1,4 @@
+from typing import List
 import datetime
 
 from mondo.mondo import MondoApi, Account, Balance, Transaction, Attachment, Webhook
@@ -12,7 +13,7 @@ class MondoClient(MondoApi):
         """
         return self._make_request('/ping/whoami')
 
-    def list_accounts(self):
+    def list_accounts(self) -> List[Account]:
         """
         List the accounts linked to the user.
         (Mondo only allows one for the moment)
@@ -25,7 +26,7 @@ class MondoClient(MondoApi):
             Account(client=self, **account) for account in response['accounts']
         ]
 
-    def get_balance(self, account_id: str):
+    def get_balance(self, account_id: str) -> Balance:
         """
         Get the current balance for the account
 
@@ -37,7 +38,7 @@ class MondoClient(MondoApi):
         return Balance(generated_at=datetime.datetime.now(), **response)
 
     def list_transactions(self, account_id: str, since: str = None,
-                          before=None, limit=None):
+                          before=None, limit=None) -> List[Transaction]:
         """
         List recent transactions for the account
 
@@ -67,7 +68,7 @@ class MondoClient(MondoApi):
             for transaction in response['transactions']
         ]
 
-    def get_transaction(self, transaction_id: str):
+    def get_transaction(self, transaction_id: str) -> Transaction:
         """
         Get details on a specific transaction
 
@@ -81,7 +82,7 @@ class MondoClient(MondoApi):
 
         return Transaction(client=self, **response['transaction'])
 
-    def annotate_transaction(self, transaction_id: str, metadata: dict):
+    def annotate_transaction(self, transaction_id: str, metadata: dict) -> Transaction:
         """
         Add metadata to a transaction.
         To delete metadata keys, update the key with an empty value
@@ -111,7 +112,7 @@ class MondoClient(MondoApi):
         """
         raise NotImplementedError
 
-    def list_webhooks(self, account_id: str):
+    def list_webhooks(self, account_id: str) -> List[Webhook]:
         """
         List webhooks currently associated to the account
 
@@ -129,7 +130,7 @@ class MondoClient(MondoApi):
             Webhook(client=self, **webhook) for webhook in response['webhooks']
         ]
 
-    def register_webhook(self, account_id: str, url: str):
+    def register_webhook(self, account_id: str, url: str) -> Webhook:
         """
         Register a url to handle transaction events
         (Docs say that only transaction events are sent at this time)
@@ -149,7 +150,7 @@ class MondoClient(MondoApi):
 
         return Webhook(client=self, **response['webook'])
 
-    def delete_webook(self, webhook_id: str):
+    def delete_webook(self, webhook_id: str) -> dict:
         """
         Delete a webhook
 
@@ -163,7 +164,7 @@ class MondoClient(MondoApi):
         return {}
 
     def register_attachment(self, transaction_id: str, file_url: str,
-                            file_type: str):
+                            file_type: str) -> Attachment:
         """
         Register an attachment url against a transaction
 
@@ -184,7 +185,7 @@ class MondoClient(MondoApi):
 
         return Attachment(client=self, **response['attachment'])
 
-    def deregister_attachment(self, attachment_id):
+    def deregister_attachment(self, attachment_id) -> dict:
         """
         Delete an attachment
 

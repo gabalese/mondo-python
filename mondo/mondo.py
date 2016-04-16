@@ -75,10 +75,10 @@ class Account(object):
 
 
 class Balance(object):
-    def __init__(self, balance, spend_today, currency, generated_at,
-                 *args, **kwargs):
-        self.amount = Amount(balance, currency)  # it's in pence
-        self.spent_today = Amount(spend_today, currency)
+    def __init__(self, balance, spend_today, currency, generated_at, *args, **kwargs):
+        self.amount = Amount(D(balance) / 100, currency)  # it's in pence
+        self.spent_today = Amount(D(spend_today) / 100, currency)
+        self.currency = currency
         self.generated_at = generated_at
 
     def __repr__(self):
@@ -91,8 +91,12 @@ class Amount(object):
         self._value = D(value)
         self._currency = currency
 
+    def __add__(self, other):
+        assert self.currency == other.currency, Exception('Different currencies')
+        return Amount(self.value + other.value, self.currency)
+
     def __eq__(self, other):
-        return self.value == other.value and self.currency == self.currency
+        return self.value == other.value and self.currency == other.currency
 
     @property
     def value(self):
@@ -104,25 +108,28 @@ class Amount(object):
 
     def __repr__(self):
         return "{:.2f} {}".format(
-            self.value / 100, self.currency
+            self.value, self.currency
         )
 
 
 class Transaction(object):
     def __init__(self, id, description, amount, currency, created, merchant,
-                 account_balance, metadata, notes, is_load, settled,
-                 category, decline_reason=None, client=None,
+                 account_balance, metadata, notes, is_load, settled, local_amount,
+                 local_currency, category, decline_reason=None, client=None,
                  *args, **kwargs):
 
         self.id = id
         self.description = description
-        self._amount = amount
+        self._amount = Amount(D(amount) / 100, currency)
         self.currency = currency
         self.created = dateutil.parser.parse(created)
         self.merchant = None
         if merchant:
             self.merchant = Merchant(**merchant)
-        self._account_balance = account_balance
+        # mondo is UK only for the moment,
+        # so you only have a GBP account currency
+        self._account_balance = Amount(D(account_balance) / 100, 'GBP')
+        self._local_amount = Amount(D(local_amount / 100), local_currency)
         self.metadata = metadata
         self.notes = notes
         self.is_load = is_load
@@ -133,7 +140,15 @@ class Transaction(object):
 
     @property
     def amount(self):
-        return Amount(self._amount, self.currency)
+        return self._amount
+
+    @property
+    def account_balance(self):
+        return self._account_balance
+
+    @property
+    def local_amount(self):
+        return self._local_amount
 
     def annotate(self, metadata: dict):
         if self.__client:

@@ -4,6 +4,7 @@ import dateutil.parser
 import requests
 
 from mondo import authorization
+from mondo.exceptions import MondoApiException
 from mondo.utils import build_url
 
 
@@ -115,7 +116,7 @@ class Amount(object):
 class Transaction(object):
     def __init__(self, id, description, amount, currency, created, merchant,
                  account_balance, metadata, notes, is_load, settled, local_amount,
-                 local_currency, category, decline_reason=None, client=None,
+                 local_currency, category, attachments, decline_reason=None, client=None,
                  *args, **kwargs):
 
         self.id = id
@@ -124,10 +125,15 @@ class Transaction(object):
         self.currency = currency
         self.created = dateutil.parser.parse(created)
         self.merchant = None
+        self.attachments = [
+            Attachment(**attachment, client=client)
+            for attachment in attachments
+        ]
         if merchant:
             self.merchant = Merchant(**merchant)
+
         # mondo is UK only for the moment,
-        # so you only have a GBP account currency
+        # so you can only have a GBP account currency
         self._account_balance = Amount(D(account_balance) / 100, 'GBP')
         self._local_amount = Amount(D(local_amount / 100), local_currency)
         self.metadata = metadata

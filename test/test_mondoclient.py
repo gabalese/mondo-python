@@ -2,7 +2,7 @@ from decimal import Decimal as D
 
 from unittest import mock
 from mondo.client import MondoApi, MondoClient
-from mondo.mondo import Amount
+from mondo.mondo import Amount, Transaction
 from test import mock_api_response as responses
 
 
@@ -57,3 +57,16 @@ def test_client_balance(mock_request):
 
     assert balance.amount == Amount('19.51', 'GBP')
     assert balance.currency == 'GBP'
+
+
+@mock.patch.object(MondoApi, '_make_request')
+def test_transactions_contain_attachments(mock_request):
+    mock_request.return_value = responses.SINGLE_TRANSACTION
+
+    client = MondoClient('randomToken')
+    transaction = client.get_transaction('randomTransaction')
+
+    assert isinstance(transaction, Transaction)
+    assert transaction.attachments
+    assert len(transaction.attachments) == 1
+    assert transaction.attachments[0].file_url == 'http://www.random.url/image.gif'

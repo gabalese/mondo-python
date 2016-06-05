@@ -53,6 +53,10 @@ class Account(object):
         self.created = dateutil.parser.parse(created)
         self.__client = client
 
+    @property
+    def transactions(self):
+        return self.list_transactions()
+
     def __repr__(self):
         return "<Account {} {} ({})>".format(
             self.id, self.description, self.created
@@ -114,35 +118,34 @@ class Amount(object):
 
 
 class Transaction(object):
-    def __init__(self, id, description, amount, currency, created, merchant,
-                 account_balance, metadata, notes, is_load, settled, local_amount,
-                 local_currency, category, attachments, decline_reason=None, client=None,
+    def __init__(self, id, description, amount, currency, created,
+                 account_balance, metadata, is_load, settled,
+                 local_amount, local_currency, category, attachments,
+                 merchant=None, decline_reason=None, client=None,
                  *args, **kwargs):
-
+        self.__client = client
         self.id = id
         self.description = description
         self._amount = Amount(D(amount) / 100, currency)
         self.currency = currency
         self.created = dateutil.parser.parse(created)
-        self.merchant = None
+
         self.attachments = [
             Attachment(**attachment, client=client)
             for attachment in attachments
-        ]
-        if merchant:
-            self.merchant = Merchant(**merchant)
+        ] if attachments else None
+
+        self.merchant = Merchant(**merchant) if merchant else None
 
         # mondo is UK only for the moment,
         # so you can only have a GBP account currency
         self._account_balance = Amount(D(account_balance) / 100, 'GBP')
         self._local_amount = Amount(D(local_amount / 100), local_currency)
         self.metadata = metadata
-        self.notes = notes
         self.is_load = is_load
         self.settled = settled
         self.category = category
         self.decline_reason = decline_reason
-        self.__client = client
 
     @property
     def amount(self):
@@ -156,7 +159,15 @@ class Transaction(object):
     def local_amount(self):
         return self._local_amount
 
-    def annotate(self, metadata: dict):
+    @property
+    def notes(self):
+        return self.metadata.get('notes')
+
+    @notes.setter
+    def notes(self, value):
+        self.add_metadata({'notes': value})
+
+    def add_metadata(self, metadata: dict):
         if self.__client:
             return self.__client.annotate_transaction(self.id, metadata)
 

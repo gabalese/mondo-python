@@ -1,7 +1,7 @@
 WHOAMI_RESPONSE = {
     "authenticated": True,
-    "client_id": "oauthclient_000094PvINDGzT3k6tz8jp",
-    "user_id": "user_000096GKiDqF6SnIEf50YT"
+    "client_id": "my_client_id",
+    "user_id": "my_user_id"
 }
 
 LIST_ACCOUNTS = {

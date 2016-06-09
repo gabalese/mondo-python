@@ -31,7 +31,7 @@ def generate_mondo_auth_url(client_id: str, redirect_uri: str,
 
     if state_token:
         params.update({
-            'state_token': state_token
+            'state': state_token
         })
 
     return BASE_API_URL + parse.urlencode(params)

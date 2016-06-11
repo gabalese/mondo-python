@@ -1,5 +1,10 @@
 from decimal import Decimal as D
 
+import datetime
+
+import asyncio
+
+import aiohttp
 import dateutil.parser
 import requests
 
@@ -15,7 +20,7 @@ class MondoApi(object):
         """
         :param access_token: The access token, as returned by the OAuth dance
         """
-        self.__access_token = access_token
+        self._access_token = access_token
 
     def _make_request(self, url: str, parameters: dict = None,
                       method: str = 'GET', *args, **kwargs):
@@ -33,15 +38,31 @@ class MondoApi(object):
                 self.BASE_API_URL, url, parameters
             ),
             headers={
-                'Authorization': 'Bearer {}'.format(self.__access_token)
+                'Authorization': 'Bearer {}'.format(self._access_token)
             }, **kwargs
         )
         if response.ok:
             return response.json()
         raise MondoApiException(response.json()['message'])
 
+    async def _make_async_request(self, url, parameters, method='GET',
+                                  *args, **kwargs):
+
+        loop = asyncio.get_event_loop()
+        with aiohttp.ClientSession(loop=loop) as session:
+            response = await session.request(
+                method=method,
+                url=build_url(
+                    self.BASE_API_URL, url, parameters
+                ),
+                headers={
+                    'Authorization': 'Bearer {}'.format(self._access_token)
+                })
+            response = await response.json()
+        return response
+
     def refresh_token(self, client_id, client_secret, refresh_token):
-        self.__access_token, _ = authorization.refresh_access_token(
+        self._access_token, _ = authorization.refresh_access_token(
             client_id, client_secret, refresh_token
         )
 
@@ -66,9 +87,12 @@ class Account(object):
         if self.__client:
             return self.__client.get_balance(account_id=self.id)
 
-    def list_transactions(self):
+    def list_transactions(self, since: datetime.datetime = None,
+                          before: datetime.datetime = None,
+                          limit: int = None):
         if self.__client:
-            return self.__client.list_transactions(account_id=self.id)
+            return self.__client.list_transactions(
+                account_id=self.id, since=since, before=before, limit=limit)
 
     def list_webhooks(self):
         if self.__client:
@@ -80,7 +104,8 @@ class Account(object):
 
 
 class Balance(object):
-    def __init__(self, balance, spend_today, currency, generated_at, *args, **kwargs):
+    def __init__(self, balance, spend_today, currency, generated_at, *args,
+                 **kwargs):
         self.amount = Amount(D(balance) / 100, currency)  # it's in pence
         self.spent_today = Amount(D(spend_today) / 100, currency)
         self.currency = currency
@@ -97,7 +122,8 @@ class Amount(object):
         self._currency = currency
 
     def __add__(self, other):
-        assert self.currency == other.currency, Exception('Different currencies')
+        assert self.currency == other.currency, Exception(
+            'Different currencies')
         return Amount(self.value + other.value, self.currency)
 
     def __eq__(self, other):
@@ -133,9 +159,9 @@ class Transaction(object):
         self.attachments = [
             Attachment(**attachment, client=client)
             for attachment in attachments
-        ] if attachments else None
+            ] if attachments else None
 
-        self.merchant = Merchant(**merchant) if merchant else None
+        self.merchant = Merchant(**merchant) if isinstance(merchant, dict) else None
 
         # mondo is UK only for the moment,
         # so you can only have a GBP account currency
@@ -146,6 +172,7 @@ class Transaction(object):
         self.settled = settled
         self.category = category
         self.decline_reason = decline_reason
+        self.emoji = getattr(self.merchant, 'emoji', None)
 
     @property
     def amount(self):
@@ -178,9 +205,9 @@ class Transaction(object):
             )
 
     def __repr__(self):
-        return "<Transaction {} {}>".format(
-            self.id, self.description, self.amount
-        )
+        return "<Transaction {date:%Y-%m-%d %H:%M} {id} {description} {amount}>".format(
+            date=self.created, id=self.id, description=self.description,
+            amount=self.amount)
 
 
 class Merchant(object):

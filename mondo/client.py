@@ -37,14 +37,38 @@ class MondoClient(MondoApi):
 
         return Balance(generated_at=datetime.datetime.now(), **response)
 
-    def list_transactions(self, account_id: str, since: str = None,
-                          before=None, limit=None) -> List[Transaction]:
+    async def list_transactions_async(self, account_id: str,
+                                      since: datetime.datetime = None,
+                                      before: datetime.datetime = None,
+                                      limit: int = None):
+        params = {
+            'account_id': account_id,
+        }
+
+        if since:
+            params.update({'since': since.isoformat('T')+'Z'})
+        if before:
+            params.update({'before': before.isoformat('T')+'Z'})
+        if limit:
+            params.update({'limit': str(limit)})
+
+        content = await self._make_async_request('/transactions', params)
+
+        return [
+            Transaction(client=self, **transaction)
+            for transaction in content['transactions']
+        ]
+
+    def list_transactions(self, account_id: str,
+                          since: datetime.datetime = None,
+                          before: datetime.datetime = None,
+                          limit: int = None) -> List[Transaction]:
         """
         List recent transactions for the account
 
         :param account_id: account id
-        :param before: only list transactions before that date (as RFC formatted)
-        :param since: only list transactions after that date (as RFC formatted)
+        :param before: only list transactions before that date
+        :param since: only list transactions after that date
         :param limit: only show a number of transactions
         :return: A list of Transaction objects
         """
@@ -55,9 +79,9 @@ class MondoClient(MondoApi):
         }
 
         if since:
-            params.update({'since': since})
+            params.update({'since': since.isoformat('T')+'Z'})
         if before:
-            params.update({'before': before})
+            params.update({'before': before.isoformat('T')+'Z'})
         if limit:
             params.update({'limit': limit})
 
@@ -67,6 +91,13 @@ class MondoClient(MondoApi):
             Transaction(client=self, **transaction)
             for transaction in response['transactions']
         ]
+
+    async def get_transaction_async(self, transaction_id):
+        content = await self._make_async_request(
+            '/transactions/{}'.format(transaction_id), {'expand[]': 'merchant'}
+        )
+
+        return Transaction(client=self, **content['transaction'])
 
     def get_transaction(self, transaction_id: str) -> Transaction:
         """

@@ -13,6 +13,10 @@ class MondoClient(MondoApi):
         """
         return self._make_request('/ping/whoami')
 
+    @property
+    def default_account(self):
+        return self.list_accounts()[0]
+
     def list_accounts(self) -> List[Account]:
         """
         List the accounts linked to the user.
@@ -168,7 +172,7 @@ class MondoClient(MondoApi):
 
         :param account_id:
         :param url: The wbhook url where the events will be forwarded
-        :return: a json representation of a webook
+        :return: a json representation of a webhook
         """
         response = self._make_request(
             method='POST',
@@ -179,9 +183,9 @@ class MondoClient(MondoApi):
             }
         )
 
-        return Webhook(client=self, **response['webook'])
+        return Webhook(client=self, **response['webhook'])
 
-    def delete_webook(self, webhook_id: str) -> dict:
+    def delete_webhook(self, webhook_id: str) -> dict:
         """
         Delete a webhook
 

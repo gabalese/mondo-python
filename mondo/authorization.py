@@ -1,3 +1,4 @@
+from collections import namedtuple
 from random import choice
 from string import ascii_uppercase
 from urllib import parse
@@ -7,6 +8,9 @@ from mondo.exceptions import MondoApiException
 
 BASE_API_URL = 'https://auth.getmondo.co.uk/?'
 
+MondoAccess = namedtuple('MondoAccess', [
+    'access_token', 'client_id', 'expires_in', 'refresh_token', 'token_type',
+    'user_id'])
 
 def generate_state_token(length=10):
     return ''.join(choice(ascii_uppercase) for _ in range(length))
@@ -67,7 +71,7 @@ def exchange_authorization_code_for_access_token(client_id: str,
     if 'error' in response:
         raise MondoApiException(response['error_description'])
 
-    return response['access_token'], response.get('refresh_token')
+    return MondoAccess(**response)
 
 
 def refresh_access_token(client_id: str, client_secret: str, refresh_token: str):
@@ -92,5 +96,5 @@ def refresh_access_token(client_id: str, client_secret: str, refresh_token: str)
 
     if 'error' in response:
         raise MondoApiException(response['error_description'])
-    
-    return response['access_token'], response['refresh_token']
+
+    return MondoAccess(**response)

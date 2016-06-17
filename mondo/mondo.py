@@ -96,11 +96,11 @@ class Account(object):
 
     def list_webhooks(self):
         if self.__client:
-            return self.__client.list_webhooks(account_id=self)
+            return self.__client.list_webhooks(account_id=self.id)
 
     def register_webhook(self, url: str):
         if self.__client:
-            return self.__client.register_webhook(url)
+            return self.__client.register_webhook(account_id=self.id, url=url)
 
 
 class Balance(object):
@@ -261,7 +261,7 @@ class Webhook(object):
 
     def delete(self):
         if self.client:
-            self.client.delete(self.id)
+            self.client.delete_webhook(self.id)
             self.active = False
             self.url = None
 
